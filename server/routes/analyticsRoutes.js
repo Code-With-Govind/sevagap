@@ -7,3 +7,4 @@ router.get('/dashboard', analyticsController.getDashboard);
 router.get('/district-comparison', analyticsController.getDistrictComparison);
 
 export default router;
+

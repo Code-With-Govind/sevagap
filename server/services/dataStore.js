@@ -72,3 +72,4 @@ export const FALLBACK_HEALTHCARE_FACILITIES = [
   { id: 7, name: 'Sub-District Hospital, Karad', district_id: 'satara', type: 'Sub-District Hospital', beds: 120, lat: 17.2885, lng: 74.1844, status: 'Verified' },
   { id: 8, name: 'Civil Hospital, Solapur', district_id: 'solapur', type: 'District Hospital', beds: 350, lat: 17.6599, lng: 75.9064, status: 'Verified' },
 ];
+

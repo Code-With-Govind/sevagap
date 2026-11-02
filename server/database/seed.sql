@@ -79,3 +79,4 @@ VALUES
   ('yavatmal', '2023-24', 63.8, 1820, 890, 7, 'Jal Jeevan Mission Sample', 'PLACEHOLDER'),
   ('nandurbar', '2023-24', 59.4, 940, 420, 5, 'Jal Jeevan Mission Sample', 'PLACEHOLDER'),
   ('gadchiroli', '2023-24', 54.1, 1510, 560, 6, 'Jal Jeevan Mission Sample', 'PLACEHOLDER');
+

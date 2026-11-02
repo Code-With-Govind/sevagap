@@ -34,3 +34,4 @@ export const districtModel = {
     return { data: found || null, source: 'Development sample data (In-memory)' };
   },
 };
+

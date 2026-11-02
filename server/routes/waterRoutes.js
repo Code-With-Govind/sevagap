@@ -9,3 +9,4 @@ router.get('/summary', waterController.getWaterSummary);
 router.get('/:districtId', validateDistrictIdParam, waterController.getWaterByDistrict);
 
 export default router;
+

@@ -88,3 +88,4 @@ CREATE TABLE IF NOT EXISTS water_data (
   INDEX idx_water_status (data_status),
   INDEX idx_water_district (district_id)
 ) ENGINE=InnoDB;
+

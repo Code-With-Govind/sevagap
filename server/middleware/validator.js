@@ -13,3 +13,4 @@ export function validateDistrictIdParam(req, res, next) {
   req.params.districtId = districtId.trim().toLowerCase();
   next();
 }
+

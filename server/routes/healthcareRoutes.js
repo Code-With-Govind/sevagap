@@ -9,3 +9,4 @@ router.get('/facilities', healthcareController.getFacilities);
 router.get('/:districtId', validateDistrictIdParam, healthcareController.getHealthcareByDistrict);
 
 export default router;
+

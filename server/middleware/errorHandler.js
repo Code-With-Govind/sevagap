@@ -21,3 +21,4 @@ export function notFoundHandler(req, res) {
     errorCode: 'NOT_FOUND',
   });
 }
+

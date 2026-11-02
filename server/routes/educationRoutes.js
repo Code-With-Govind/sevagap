@@ -9,3 +9,4 @@ router.get('/summary', educationController.getEducationSummary);
 router.get('/:districtId', validateDistrictIdParam, educationController.getEducationByDistrict);
 
 export default router;
+

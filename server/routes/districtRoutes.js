@@ -8,3 +8,4 @@ router.get('/', districtController.getDistricts);
 router.get('/:districtId', validateDistrictIdParam, districtController.getDistrictById);
 
 export default router;
+
