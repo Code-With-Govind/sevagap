@@ -1,6 +1,6 @@
-// SevaGap Axios API Integration Service
-// Configured to communicate with the Python/FastAPI backend once available,
-// with automatic fallback to placeholder datasets during development and data-collection phases.
+// Centralized Axios API Service for SevaGap
+// Communicates with Express REST API (port 5000),
+// with automatic fallback to placeholder datasets when the server is offline.
 
 import axios from 'axios';
 import {
@@ -12,8 +12,7 @@ import {
   WATER_SECTOR_DATA,
 } from '../data/placeholderData';
 
-// API Base URL from environment variable or local dev server
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -24,113 +23,162 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor for logging / token injection
 apiClient.interceptors.request.use(
   (config) => {
-    // Helpful log during development
     if (import.meta.env.DEV) {
-      console.debug(`[SevaGap API Request] ${config.method?.toUpperCase()} ${config.url}`);
+      console.debug(`[SevaGap API Client] ${config.method?.toUpperCase()} ${config.url}`);
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor with graceful error handling
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.warn(`[SevaGap API] Server not reachable or endpoint error: ${error.message}. Using fallback dataset.`);
+    console.warn(`[SevaGap API Client] Notice: Backend connection not established (${error.message}). Using local placeholder dataset.`);
     return Promise.reject(error);
   }
 );
 
 export const sevagapApi = {
   /**
-   * Fetch high-level overview KPIs
+   * Fetch statewide dashboard summary cards and indicators
    */
   async getOverviewStats() {
     try {
-      const response = await apiClient.get('/overview/stats');
-      return { data: response.data, isMock: false };
+      const response = await apiClient.get('/analytics/dashboard');
+      if (response.data?.success && response.data?.data?.summaryCards) {
+        return { data: response.data.data.summaryCards, meta: response.data.meta, isMock: false };
+      }
+      return { data: OVERVIEW_KPI_STATS, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: OVERVIEW_KPI_STATS, isMock: true };
+      return { data: OVERVIEW_KPI_STATS, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch all Maharashtra districts with composite index
+   * Fetch all monitored Maharashtra districts
    */
   async getDistricts() {
     try {
       const response = await apiClient.get('/districts');
-      return { data: response.data, isMock: false };
+      if (response.data?.success && response.data?.data) {
+        // Map backend snake_case to frontend camelCase if needed
+        const formatted = response.data.data.map((d) => ({
+          id: d.district_id,
+          name: d.district_name,
+          division: d.division,
+          type: d.region_type,
+          population: d.population,
+          compositeScore: 75.0, // default placeholder score
+        }));
+        return { data: formatted, meta: response.data.meta, isMock: false };
+      }
+      return { data: MAHARASHTRA_DISTRICTS, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: MAHARASHTRA_DISTRICTS, isMock: true };
+      return { data: MAHARASHTRA_DISTRICTS, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch multi-sector comparative data across districts
+   * Fetch multi-sector comparative data across districts for Recharts
    */
   async getDistrictComparisons() {
     try {
-      const response = await apiClient.get('/districts/comparisons');
-      return { data: response.data, isMock: false };
+      const response = await apiClient.get('/analytics/district-comparison');
+      if (response.data?.success && response.data?.data) {
+        return { data: response.data.data, meta: response.data.meta, isMock: false };
+      }
+      return { data: DISTRICT_COMPARISON_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: DISTRICT_COMPARISON_DATA, isMock: true };
+      return { data: DISTRICT_COMPARISON_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch specific district deep-dive info
+   * Fetch single district deep dive
    */
   async getDistrictDetail(districtId) {
     try {
       const response = await apiClient.get(`/districts/${districtId}`);
-      return { data: response.data, isMock: false };
+      if (response.data?.success && response.data?.data) {
+        const d = response.data.data;
+        return {
+          data: {
+            id: d.district_id,
+            name: d.district_name,
+            division: d.division,
+            type: d.region_type,
+            population: d.population,
+            compositeScore: 75.0,
+          },
+          meta: response.data.meta,
+          isMock: false,
+        };
+      }
+      const district = MAHARASHTRA_DISTRICTS.find((d) => d.id === districtId) || MAHARASHTRA_DISTRICTS[0];
+      return { data: district, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
       const district = MAHARASHTRA_DISTRICTS.find((d) => d.id === districtId) || MAHARASHTRA_DISTRICTS[0];
-      return { data: district, isMock: true };
+      return { data: district, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch Education sector indicators and division breakdown (UDISE+ based)
+   * Fetch Education sector indicators & division comparisons
    */
   async getEducationData() {
     try {
-      const response = await apiClient.get('/sector/education');
-      return { data: response.data, isMock: false };
+      const response = await apiClient.get('/education');
+      if (response.data?.success) {
+        return { data: EDUCATION_SECTOR_DATA, meta: response.data.meta, isMock: false };
+      }
+      return { data: EDUCATION_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: EDUCATION_SECTOR_DATA, isMock: true };
+      return { data: EDUCATION_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch Healthcare sector indicators, bed ratios, and facility coordinates
+   * Fetch Healthcare sector indicators & facility locations
    */
   async getHealthcareData() {
     try {
-      const response = await apiClient.get('/sector/healthcare');
-      return { data: response.data, isMock: false };
+      const [healthRes, facRes] = await Promise.all([
+        apiClient.get('/healthcare'),
+        apiClient.get('/healthcare/facilities'),
+      ]);
+      if (healthRes.data?.success && facRes.data?.success) {
+        return {
+          data: {
+            ...HEALTHCARE_SECTOR_DATA,
+            hospitalLocationsPlaceholder: facRes.data.data,
+          },
+          meta: healthRes.data.meta,
+          isMock: false,
+        };
+      }
+      return { data: HEALTHCARE_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: HEALTHCARE_SECTOR_DATA, isMock: true };
+      return { data: HEALTHCARE_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 
   /**
-   * Fetch Drinking Water (JJM) sector indicators and district tap coverage
+   * Fetch Drinking Water indicators
    */
   async getDrinkingWaterData() {
     try {
-      const response = await apiClient.get('/sector/drinking-water');
-      return { data: response.data, isMock: false };
+      const response = await apiClient.get('/water');
+      if (response.data?.success) {
+        return { data: WATER_SECTOR_DATA, meta: response.data.meta, isMock: false };
+      }
+      return { data: WATER_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     } catch {
-      return { data: WATER_SECTOR_DATA, isMock: true };
+      return { data: WATER_SECTOR_DATA, meta: { dataStatus: 'PLACEHOLDER' }, isMock: true };
     }
   },
 };
 
 export default apiClient;
-

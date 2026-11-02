@@ -38,8 +38,18 @@ export default function DistrictAnalysis() {
 
   return (
     <div className="space-y-8">
+      {/* Demo Notice */}
+      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-900">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded font-black bg-amber-200 text-amber-900 text-[10px]">
+            DEMO DATA
+          </span>
+          <span>District scores and indicators are mock development placeholders. Final metrics will be computed by backend statistical analysis.</span>
+        </div>
+      </div>
+
       <SectionHeader
-        badge="Spatial & District Benchmarking"
+        badge="Spatial & District Benchmarking (Sample)"
         title="District Disparity & Composite Service Index"
         subtitle="Evaluating intra-state variations, tribal gap indicators, and cross-district service access."
         action={

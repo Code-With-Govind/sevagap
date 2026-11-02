@@ -7,38 +7,91 @@ import {
   Bed,
   CheckCircle2,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import SectionHeader from '../components/common/SectionHeader';
 import SummaryCard from '../components/common/SummaryCard';
 import ReusableBarChart from '../components/charts/ReusableBarChart';
 import ReusablePieChart from '../components/charts/ReusablePieChart';
-import InteractiveMapPlaceholder from '../components/dashboard/InteractiveMapPlaceholder';
+import HealthcareMap from '../components/dashboard/HealthcareMap';
 import { sevagapApi } from '../services/api';
 
 export default function Healthcare() {
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
-    async function load() {
+    let ignore = false;
+    async function loadData() {
       try {
         const res = await sevagapApi.getHealthcareData();
-        setHealthData(res.data);
+        if (!ignore) {
+          setHealthData(res.data);
+          setError(null);
+        }
       } catch (e) {
-        console.error(e);
+        if (!ignore) {
+          console.error(e);
+          setError('Unable to fetch healthcare metrics from backend. Displaying offline development data.');
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
-    load();
-  }, []);
 
-  if (loading || !healthData) {
-    return <div className="p-12 text-center text-slate-500 text-sm">Loading Healthcare Indicators...</div>;
+    loadData();
+    return () => {
+      ignore = true;
+    };
+  }, [reloadTrigger]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadTrigger((prev) => prev + 1);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-3">
+        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-slate-500 font-medium">Loading Healthcare Indicators & GIS Coordinates...</p>
+      </div>
+    );
+  }
+
+  if (error && !healthData) {
+    return (
+      <div className="bg-rose-50 border border-rose-200 rounded-xl p-8 text-center max-w-lg mx-auto my-8">
+        <AlertTriangle className="w-8 h-8 text-rose-600 mx-auto mb-2" />
+        <h3 className="text-sm font-bold text-rose-900 mb-1">Failed to Load Healthcare Data</h3>
+        <p className="text-xs text-rose-700 mb-4">{error}</p>
+        <button
+          onClick={handleRetry}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>Retry</span>
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
+      {/* Notice Pill */}
+      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-900">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded font-black bg-amber-200 text-amber-900 text-[10px]">
+            DEMO DATA
+          </span>
+          <span>Sample values shown for UI testing. Actual validated hospital GIS points will replace these.</span>
+        </div>
+      </div>
+
       <SectionHeader
         badge="Public Healthcare Analytics"
         title="Public Healthcare Facilities & GIS Spatial Mapping"
@@ -55,7 +108,7 @@ export default function Healthcare() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {healthData.kpis.map((kpi, idx) => (
+        {healthData?.kpis?.map((kpi, idx) => (
           <SummaryCard
             key={idx}
             title={kpi.title}
@@ -69,12 +122,12 @@ export default function Healthcare() {
         ))}
       </div>
 
-      {/* Interactive Map Placeholder Section - Dedicated for hospital data */}
+      {/* Interactive Leaflet Map Component */}
       <section>
-        <InteractiveMapPlaceholder
-          locations={healthData.hospitalLocationsPlaceholder}
+        <HealthcareMap
+          facilities={healthData?.hospitalLocationsPlaceholder || []}
           title="Interactive GIS Hospital & Healthcare Facility Map"
-          subtitle="Spatial clustering of secondary and tertiary care centres across Maharashtra. Ready for validated coordinate overlay."
+          subtitle="Spatial clustering of secondary and tertiary care centres across Maharashtra. Powered by Leaflet."
         />
       </section>
 
@@ -82,7 +135,7 @@ export default function Healthcare() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ReusableBarChart
-            data={healthData.bedAvailabilityByDivision}
+            data={healthData?.bedAvailabilityByDivision || []}
             xKey="name"
             bars={[
               { key: 'bedsPer10k', name: 'Govt Beds / 10k Pop', color: '#10b981' },
@@ -96,7 +149,7 @@ export default function Healthcare() {
 
         <div>
           <ReusablePieChart
-            data={healthData.facilityTypesDistribution}
+            data={healthData?.facilityTypesDistribution || []}
             title="Public Health Facility Hierarchy"
             subtitle="Proportional network of Sub-Centres, PHCs, CHCs, and District Hospitals"
             height={340}
@@ -114,7 +167,7 @@ export default function Healthcare() {
             </h4>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            The healthcare facility location dataset is currently undergoing manual and automated geocoding verification (lat/long coordinate cross-checking against the Maharashtra Public Health Department and OpenStreetMap gazetteers). The map above demonstrates the interactive rendering layer, ready to receive the finalized dataset.
+            The healthcare facility location dataset is currently undergoing manual and automated geocoding verification (lat/long coordinate cross-checking against the Maharashtra Public Health Department and OpenStreetMap gazetteers). The map above demonstrates the interactive Leaflet rendering layer, ready to receive the finalized dataset.
           </p>
         </div>
 

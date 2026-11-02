@@ -9,6 +9,8 @@ import {
   Search,
   BarChart2,
   Sparkles,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import SummaryCard from '../components/common/SummaryCard';
 import SectionHeader from '../components/common/SectionHeader';
@@ -19,23 +21,46 @@ import { MAHARASHTRA_DISTRICTS } from '../data/placeholderData';
 export default function Home() {
   const [stats, setStats] = useState([]);
   const [comparisons, setComparisons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchDistrict, setSearchDistrict] = useState('');
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
+    let ignore = false;
     async function loadData() {
       try {
         const [statsRes, compRes] = await Promise.all([
           sevagapApi.getOverviewStats(),
           sevagapApi.getDistrictComparisons(),
         ]);
-        setStats(statsRes.data);
-        setComparisons(compRes.data);
+        if (!ignore) {
+          setStats(statsRes.data);
+          setComparisons(compRes.data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Failed to load overview data', err);
+        if (!ignore) {
+          console.error('Failed to load overview data', err);
+          setError('Unable to reach backend API. Displaying verified development placeholders.');
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
+
     loadData();
-  }, []);
+    return () => {
+      ignore = true;
+    };
+  }, [reloadTrigger]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadTrigger((prev) => prev + 1);
+  };
 
   const filteredDistricts = MAHARASHTRA_DISTRICTS.filter((d) =>
     d.name.toLowerCase().includes(searchDistrict.toLowerCase()) ||
@@ -44,6 +69,22 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      {/* Prominent Demo Data Watermark Banner */}
+      <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-amber-200 text-amber-900 tracking-wider">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-900" />
+            DEMO DATA / PLACEHOLDER
+          </span>
+          <p className="text-xs text-amber-900 font-medium">
+            All metrics shown below are developmental sample placeholders. Final verified findings will be published upon dataset validation.
+          </p>
+        </div>
+        <span className="text-[11px] font-mono font-semibold text-amber-800 shrink-0">
+          State: Initial Pipeline
+        </span>
+      </div>
+
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl p-6 sm:p-10 shadow-lg relative overflow-hidden">
         <div className="relative z-10 max-w-3xl">
@@ -85,10 +126,27 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Loading & Error States */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center p-8 text-slate-500 text-xs gap-2">
+          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <span>Syncing indicators with Express REST API...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={handleRetry} className="inline-flex items-center gap-1 font-bold underline">
+            <RefreshCw className="w-3 h-3" /> Retry
+          </button>
+        </div>
+      )}
+
       {/* Overview KPI Cards */}
       <section>
         <SectionHeader
-          badge="High-Level State Metrics"
+          badge="High-Level State Metrics (Sample)"
           title="Core Infrastructure Indicators"
           subtitle="Key performance benchmarks across primary public services in Maharashtra"
         />
@@ -126,7 +184,7 @@ export default function Home() {
             data={comparisons}
             height={380}
             title="Cross-Sector District Parity Comparison"
-            subtitle="Normalized 0–100 scores across Education, Healthcare, and Drinking Water"
+            subtitle="Normalized 0–100 scores across Education, Healthcare, and Drinking Water (Demo Data)"
           />
         </div>
 
@@ -165,7 +223,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-600 flex items-center gap-1">
-                    Healthcare & GIS Map
+                    Healthcare & Leaflet GIS Map
                     <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-0.5">
@@ -211,7 +269,12 @@ export default function Home() {
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h3 className="text-base font-bold text-slate-900">District Index Overview</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900">District Index Overview</h3>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                DEMO DATA
+              </span>
+            </div>
             <p className="text-xs text-slate-500">
               Composite service index rankings across sample Maharashtra districts
             </p>

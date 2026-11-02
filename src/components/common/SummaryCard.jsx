@@ -9,6 +9,7 @@ export default function SummaryCard({
   icon: Icon,
   sector = 'default',
   description,
+  isPlaceholder = true,
   onClick,
 }) {
   const sectorStyles = {
@@ -34,12 +35,19 @@ export default function SummaryCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all duration-200 p-5 border-l-4 ${
+      className={`relative bg-white rounded-xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all duration-200 p-5 border-l-4 ${
         sectorStyles[sector] || sectorStyles.default
       } ${onClick ? 'cursor-pointer hover:border-slate-300' : ''}`}
     >
+      {/* Visual Demo/Placeholder Tag */}
+      {isPlaceholder && (
+        <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider uppercase bg-amber-100 text-amber-800 border border-amber-200">
+          Demo
+        </span>
+      )}
+
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
+        <div className="flex-1 pr-8">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{title}</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-2xl font-bold tracking-tight text-slate-900">{value}</h3>
