@@ -231,3 +231,4 @@ export const ABOUT_SECTIONS = {
     ],
   },
 };
+

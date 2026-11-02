@@ -169,3 +169,4 @@ export const WATER_SECTOR_DATA = {
     { name: 'Traditional / Dugwell Source', value: 5, color: '#93c5fd' },
   ]
 };
+
